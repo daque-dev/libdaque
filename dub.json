@@ -2,9 +2,10 @@
 	"name": "libdaque",
 	"targetType": "library",
 	"authors": [
-		"Quevangel"
+		"Miguel Ángel Martínez Quevedo (quevangel)",
+		"David Omar Flores Chávez (davidomarf)"
 	],
 	"description": "Daque library",
-	"copyright": ".",
-	"license": ""
+	"copyright": "Copyright © 2018, Daque",
+	"license": "MIT"
 }
