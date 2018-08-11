@@ -29,6 +29,7 @@ docs/
 ### Daque ###
 libdaque
 libdaque-test-library
+liblibdaque.a
 
 ### Linux ###
 *~

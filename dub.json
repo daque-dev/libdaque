@@ -7,5 +7,10 @@
 	],
 	"description": "Daque library",
 	"copyright": "Copyright © 2018, Daque",
-	"license": "MIT"
+	"license": "MIT",
+	"dependencies": 
+	{
+		"derelict-sdl2": "~>3.0.0-beta",
+		"derelict-gl3": "~>2.0.0-beta"
+	}
 }
