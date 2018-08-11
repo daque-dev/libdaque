@@ -1,0 +1,10 @@
+{
+	"name": "libdaque",
+	"targetType": "library",
+	"authors": [
+		"Quevangel"
+	],
+	"description": "Daque library",
+	"copyright": ".",
+	"license": ""
+}

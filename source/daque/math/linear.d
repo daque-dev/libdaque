@@ -1,0 +1,70 @@
+module daque.math.linear;
+
+enum MatrixOrder
+{
+	RowMajor, ColumnMajor
+}
+
+struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order)
+{
+	private RealType[Rows * Columns] m_element;
+	
+	ref RealType opIndex(uint i, uint j)
+	{
+		static if(Order == MatrixOrder.RowMajor)
+		{
+			return m_element[j * Rows + i];
+		}
+		else
+		{
+			return m_element[i * Columns + j];
+		}
+	}
+
+	RealType[] linearize(MatrixOrder order = Order)()
+	{
+		RealType[] linearization;
+
+		static if(order == Order)
+		{
+			linearization = m_element;
+		}
+		else
+		{
+			static if(order == MatrixOrder.RowMajor)
+			{
+				for(uint i; i < Rows; i++)
+					for(uint j; j < Columns; j++)
+						linearization ~= this[i, j];
+			}
+			else
+			{
+				for(uint j; j < Columns; j++)
+					for(uint i; i < Rows; i++)
+						linearization ~= this[i, j];
+			}
+		}
+
+		return linearization;
+	}
+
+	static Matrix!(RealType, Rows, Columns, Order) Identity()
+	{
+		Matrix!(RealType, Rows, Columns, Order) identity;
+		for(uint i; i < Rows; i++)
+			for(uint j; j < Columns; j++)
+				identity[i, j] = i == j;
+		return identity;
+	}
+}
+
+unittest
+{
+	import std.algorithm;
+	import std.range;
+	import std.stdio;
+	auto identityColumn = Matrix!(real, 3, 3, MatrixOrder.ColumnMajor).Identity();
+	auto identityRow = Matrix!(real, 3, 3, MatrixOrder.RowMajor).Identity();
+	writeln(identityColumn.linearize!(MatrixOrder.RowMajor)());
+	writeln(identityRow);
+}
