@@ -68,12 +68,6 @@ public:
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
-	/// Renders an Array of vertices already on GPU memory
-	void render(VertexType)(GpuArray!VertexType vertices)
-	{
-		vertices.bind();
-		glDrawArrays(GL_TRIANGLES, 0, cast(int) vertices.size());
-	}
 	/// Prints current buffer contents into screen
 	void print()
 	{

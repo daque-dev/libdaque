@@ -16,6 +16,13 @@ import derelict.sdl2.image;
 
 import daque.math.geometry;
 
+/// Renders an Array of vertices already on GPU memory
+void render(VertexType)(GpuArray!VertexType vertices)
+{
+	vertices.bind();
+	glDrawArrays(GL_TRIANGLES, 0, cast(int) vertices.size());
+}
+
 /++
 Initializes required libraries for graphics rendering.
 
@@ -548,7 +555,7 @@ public:
 			+/
 	void clear(uint clearColor)
 	{
-		//glClearTexImage(m_name, 0, GL_RGBA, GL_UNSIGNED_BYTE, &clearColor);
+		//t glClearTexImage(m_name, 0, GL_RGBA, GL_UNSIGNED_BYTE, &clearColor);
 	}
 
 	private template GLType(string name)
