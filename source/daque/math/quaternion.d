@@ -3,6 +3,7 @@ module daque.math.quaternion;
 import std.math;
 
 import daque.math.geometry;
+import daque.math.linear;
 
 struct Quaternion(R)
 {
@@ -19,6 +20,33 @@ struct Quaternion(R)
 	{
 		this.scalar = scalar;
 		this.vector = vector;
+	}
+
+	static public Quaternion!R getRotation(R[3] axis, R amount)
+	{
+		Quaternion quaternion = Quaternion([0, 0, 0, 0]);
+		quaternion.scalar = sin(amount / 2.0f);
+		quaternion.vector[] = cos(amount / 2.0f) * axis[];
+		return quaternion;
+	}
+
+	Matrix!(R, 3, 3) getRotationMatrix()
+	{
+		auto m = Matrix!(R, 3, 3).Identity();
+
+		for(uint j; j < 3; j++)
+		{
+			Quaternion columnQuaternion = Quaternion([0, 0, 0, 0]);
+			columnQuaternion.scalar = 0;
+			for(uint i; i < 3; i++)
+				columnQuaternion.vector[i] = m[i, j];
+
+			columnQuaternion = columnQuaternion * this;
+			for(uint i; i < 3; i++)
+				m[i, j] = columnQuaternion.vector[i];
+		}
+
+		return m;
 	}
 
 	public Quaternion opBinary(string op)(Quaternion rhs)
@@ -47,6 +75,12 @@ struct Quaternion(R)
 		conjugateQuaternion.scalar = this.scalar; 
 		conjugateQuaternion.vector[] = -1 * this.vector[]; 
 		return conjugateQuaternion;
+	}
+
+	public Quaternion inverse()
+	{
+		Quaternion invSquareAbs = Quaternion(1.0 / squareAbs(), [0, 0, 0]);
+		return conjugate() * invSquareAbs;
 	}
 
 	public real abs()
