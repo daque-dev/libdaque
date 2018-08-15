@@ -5,7 +5,7 @@ enum MatrixOrder
 	RowMajor, ColumnMajor
 }
 
-struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order)
+struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order = MatrixOrder.ColumnMajor)
 {
 	private RealType[Rows * Columns] m_element;
 	

@@ -17,7 +17,7 @@ import derelict.sdl2.image;
 import daque.math.geometry;
 
 /// Renders an Array of vertices already on GPU memory
-void render(VertexType)(GpuArray!VertexType vertices)
+void render(GpuArray vertices)
 {
 	vertices.bind();
 	glDrawArrays(GL_TRIANGLES, 0, cast(int) vertices.size());
@@ -217,6 +217,23 @@ public:
 		glUseProgram(m_programGlName);
 	}
 
+
+	int getUniformLocation(string name)
+	{
+		return glGetUniformLocation(m_programGlName, name.toStringz());
+	}
+
+	template strToType(string typeString)
+	{
+		static if(typeString == "i")
+			alias strToType = int;
+		else static if(typeString == "f")
+			alias strToType = float;
+		else
+			static assert(0, "unrecognized string type " ~ typeString);
+	}
+
+	import std.conv;
 	/++
 			Sets a integer uniform variable inside the program
 
@@ -224,11 +241,19 @@ public:
 			uniformName = name of the single-valued uniform integer to be changed
 			val = new value to be assigned
 			+/
-	void setUniform1i(string uniformName, int val)
+	void setUniform(uint count, string typeString)(int location, void[] data)
 	{
-		GLint uniformLocation = glGetUniformLocation(m_programGlName, uniformName.toStringz());
 		this.use();
-		glUniform1i(uniformLocation, val);
+		mixin("alias glUniform = " ~ "glUniform" ~ to!string(count) ~ typeString ~ "v;");
+		glUniform(location, cast(int)(data.length / (strToType!typeString.sizeof * count)), cast(strToType!typeString*)data.ptr);
+	}
+
+	// TODO: setUniformMatrix method
+
+	void getUniform(string typeString)(int location, strToType!typeString* output)
+	{
+		mixin("alias glGetUniform = glGetUniform" ~ typeString ~ "v;");
+		glGetUniform(m_programGlName, location, output);
 	}
 
 private:
@@ -305,37 +330,6 @@ public:
 private:
 	// opengl name of the buffer managed by @this
 	immutable(GLuint) m_name;
-}
-
-/++
-Gives the necessary information to represent a Vertex in a 3D model.
-+/
-struct Vertex
-{
-	/// Position of the vertex
-	float[3] position;
-	float[2] uv;
-
-	/++
-		OpenGL requires us to give it the format in which data is stored in GPU.
-		Vertex.formats provides this information about this Vertex format in particular.
-
-		Note it is a *static* property of the Vertex structure, not of instances.
-
-		OpenGL thinks of every Vertex as having _attributes_, as we think of _members_ of a struct.
-		This Vertex struct contains two _attributes_, they are the @position and the @color.
-
-		See AttributeFormat for more info about the data needed by OpenGL.
-		+/
-	static AttributeFormat[] formats = [{
-	index:
-		0, size : 3, type : GL_FLOAT, normalized : GL_FALSE, stride
-			: cast(GLsizei) Vertex.sizeof, pointer : cast(void*) Vertex.position.offsetof
-	}, {
-	index:
-		1, size : 2, type : GL_FLOAT, normalized : GL_TRUE, stride
-			: cast(GLsizei) Vertex.sizeof, pointer : cast(void*) Vertex.uv.offsetof
-	}];
 }
 
 /++
@@ -417,13 +411,13 @@ public:
 			VertexType.
 
 			Inputs:
-			buffer = Buffer to associate with this VertexArray and this format
+			buffer = Buffer to associae with this VertexArray and this format
 			+/
-	void use(VertexType)(Buffer buffer)
+	void use(Buffer buffer, AttributeFormat[] formats)
 	{
 		bind();
 		buffer.bind();
-		VertexType.formats.each!setup;
+		formats.each!setup;
 	}
 
 	/++
@@ -440,12 +434,12 @@ Represents an array of things to be stored in the GPU
 Params:
 DataType = Type of the data to be stored
 	+/
-class GpuArray(DataType)
+class GpuArray
 {
 private:
 	Buffer m_buffer;
 	VertexArray m_vao;
-	DataType[] m_data;
+	uint m_size;
 
 public:
 	/++
@@ -454,16 +448,14 @@ public:
 			Params:
 			data = data to be initialy filled with
 			+/
-	this(DataType[] data)
+	this(void[] data, uint noElements, AttributeFormat[] attributeFormats)
 	{
-		m_data.length = data.length;
-		m_data[] = data[];
-
 		m_buffer = new Buffer();
 		m_vao = new VertexArray();
+		m_size = noElements;
 
-		m_buffer.bufferData(data.ptr, DataType.sizeof * data.length);
-		m_vao.use!DataType(m_buffer);
+		m_buffer.bufferData(data.ptr, data.length);
+		m_vao.use(m_buffer, attributeFormats);
 	}
 
 	/// Binds the associated VertexArray to the opengl context
@@ -471,10 +463,10 @@ public:
 	{
 		m_vao.bind();
 	}
-	/// Returns the number of elements in the array
-	ulong size() const
+
+	uint size()
 	{
-		return m_data.length;
+		return m_size;
 	}
 }
 
