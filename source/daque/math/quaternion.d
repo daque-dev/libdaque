@@ -93,3 +93,9 @@ struct Quaternion(R)
 		return (this * this.conjugate).scalar;
 	}
 }
+
+
+unittest
+{
+	assert(1 == 1);
+}
