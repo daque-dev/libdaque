@@ -27,7 +27,6 @@ public:
 	+/
 	this(string functionName)
 	{
-		import std.stdio;
 		writeln("\n--- ", functionName, " test ---");
 	}
 	~this()
