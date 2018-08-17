@@ -8,6 +8,12 @@ module daque.utils.terminal;
 
 import std.traits;
 
+/++
+	Maps a color with its ANSI escape code
+
+	Printed before any text, will color that text until
+	another color is specified.
++/
 enum TerminalColor: string
 {
 	Black =     "\033[0;30m",
