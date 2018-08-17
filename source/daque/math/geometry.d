@@ -103,7 +103,7 @@ real magnitude(R)(R[] v)
 
 ///
 unittest{
-    import daque.test;
+    import daque.utils.test;
     
     Tester test = new Tester("Magnitude");
 
