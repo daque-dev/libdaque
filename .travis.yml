@@ -9,6 +9,4 @@ before_install:
   - sudo apt-get install libsdl2-image-dev
 
 script:
-   - dub test -b unittest-cov --compiler=${DC}
-after_success:
-   - bash <(curl -s https://codecov.io/bash)
+   - dub test
