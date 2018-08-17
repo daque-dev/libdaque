@@ -1,12 +1,11 @@
+/++
+Authors: 
+    Miguel Ángel (quevangel), quevangel@protonmail.com
+    David Omar Flores Chávez (davidomarf), davidomarfch@gmail.com
++/
 module daque.math.geometry;
 
 import std.math;
-
-void geometryTest()
-{
-	import std.stdio;
-	writeln("daque geometry correctly linked");
-}
 
 /++
     Mathematical dot product
@@ -14,7 +13,10 @@ void geometryTest()
 R dot(R)(R[] v, R[] w)
 in
 {
-    assert(v.length == w.length, "Dot product can only be applied between to vectors of the same dimension");
+    assert(v.length == w.length, 
+        "Dot product can only be applied between to vectors of the same dimension");
+    assert(v.length > 0,
+        "Dot product can't be performed on empty vectors");
 }
 out
 {
@@ -22,32 +24,40 @@ out
 }
 do
 {
-	import std.array;
-	import std.algorithm;
+    import std.array;
+    import std.algorithm;
 
-	R[] products;
-	products.length = v.length;
-	products[] = v[] * w[];
-	return products.array.sum;
+    R[] products;
+    products.length = v.length;
+    products[] = v[] * w[];
+    return products.array.sum;
+}
+
+///
+unittest
+{
+    assert(dot([1, 0], [0, 1]) == 0);
+    assert(dot([1, 0], [1, 0]) == 1);
+    assert(dot([1, 2, 3], [1, 2, 3]) == 14);
 }
 
 /++
-	Mathematical distance between to points
+    Mathematical distance between to points
 +/
 real distance(R)(R[] v, R[] w)
 in
 {
-	assert(v.length == w.length, "distance can only be calculated between same-dimensional vectors");
+    assert(v.length == w.length, "distance can only be calculated between same-dimensional vectors");
 }
 out
 {
 }
 do
 {
-	R[] diff;
-	diff.length = v.length;
-	diff[] = w[] - v[];
-	return magnitude(diff);
+    R[] diff;
+    diff.length = v.length;
+    diff[] = w[] - v[];
+    return magnitude(diff);
 }
 
 /++
@@ -79,36 +89,42 @@ do
 R magnitudeSquared(R)(R[] v)
 out(result)
 {
-	assert(result >= 0);
+    assert(result >= 0);
 }
 do
 {
-	return dot(v, v);
+    return dot(v, v);
 }
 
 real magnitude(R)(R[] v)
 {
-	return sqrt(cast(real)magnitudeSquared(v));
+    return sqrt(cast(real)magnitudeSquared(v));
+}
+
+///
+unittest{
+    import daque.test;
+    
+    Tester test = new Tester("Magnitude");
+
+    test.approx!(magnitude!double)([0.0], 0.0);
+    test.approx!(magnitude!double)([1.0, 1.0], sqrt(2.0));
+    test.approx!(magnitude!double)([1.0, 3.0], 0.0);
 }
 
 R[] normalize(R)(R[] v)
 in
 {
-	assert(magnitudeSquared(v) != 0, "Cannot normalize a zero vector");
+    assert(magnitudeSquared(v) != 0, "Cannot normalize a zero vector");
 }
 out(result)
 {
-	assert(approxEqual(magnitudeSquared(result.dup), 1), "Normalized vector wasn't unitary");
+    assert(approxEqual(magnitudeSquared(result.dup), 1), "Normalized vector wasn't unitary");
 }
 do
 {
-	R[] normalized;
-	normalized.length = v.length;
-	normalized[] = v[] / magnitude(v);
-	return normalized;
+    R[] normalized;
+    normalized.length = v.length;
+    normalized[] = v[] / magnitude(v);
+    return normalized;
 }
-
-// unittest
-// {
-// 	assert(distance([0.0, 0.0], [0.5, 0.5]) != 0.0);
-// }
