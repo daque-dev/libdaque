@@ -15,6 +15,7 @@ import derelict.sdl2.sdl;
 import derelict.sdl2.image;
 
 import daque.math.geometry;
+import daque.math.linear;
 
 /// Renders an Array of vertices already on GPU memory
 void render(GpuArray vertices)
@@ -213,7 +214,7 @@ public:
 			commands
 			+/
 	void use()
-	{
+    {	
 		glUseProgram(m_programGlName);
 	}
 
@@ -248,7 +249,27 @@ public:
 		glUniform(location, cast(int)(data.length / (strToType!typeString.sizeof * count)), cast(strToType!typeString*)data.ptr);
 	}
 
-	// TODO: setUniformMatrix method
+	template matrixDimensionString(uint Rows, uint Columns)
+	{
+		static if(Rows == Columns)
+		{
+			enum matrixDimensionString = to!string(Rows);
+		}
+		else
+		{
+			enum matrixDimensionString = to!string(Rows) ~ "x" ~ to!string(Columns);
+		}
+	}
+
+	// TODO: TEST
+	void setUniformMatrix(uint Rows, uint Columns, RealType)(int location, Matrix!(RealType, Rows, Columns) matrix)
+	{
+		mixin("alias uniformMatrix = glUniformMatrix" ~ matrixDimensionString!(Rows, Columns) ~ "fv;");
+		RealType[] linearization = matrix.linearize!(MatrixOrder.ColumnMajor)();
+		assert(linearization.length == Rows * Columns);
+
+		uniformMatrix(location, 1, GL_FALSE, cast(const GLfloat*) linearization.ptr);
+	}
 
 	void getUniform(string typeString)(int location, strToType!typeString* output)
 	{
