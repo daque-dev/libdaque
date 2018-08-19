@@ -6,6 +6,7 @@ Authors:
 module daque.math.geometry;
 
 import std.math;
+import std.traits;
 
 private bool isNan(R)(R[] v)
 {
