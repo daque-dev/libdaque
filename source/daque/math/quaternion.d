@@ -22,11 +22,18 @@ struct Quaternion(R)
 		this.vector = vector;
 	}
 
+    public this(R scalar)
+    {
+        this.scalar = scalar;
+        this.vector[] = 0;
+    }
+
 	static public Quaternion!R getRotation(R[3] axis, R amount)
 	{
+        R[] unitAxis = normalize(axis);
 		Quaternion quaternion = Quaternion([0, 0, 0, 0]);
-		quaternion.scalar = sin(amount / 2.0f);
-		quaternion.vector[] = cos(amount / 2.0f) * axis[];
+		quaternion.scalar = cos(amount / 2.0f);
+		quaternion.vector[] = sin(amount / 2.0f) * axis[];
 		return quaternion;
 	}
 
@@ -76,6 +83,27 @@ struct Quaternion(R)
 		conjugateQuaternion.vector[] = -1 * this.vector[]; 
 		return conjugateQuaternion;
 	}
+
+    public Quaternion conjugate(Quaternion q)
+    {
+        return this * q * this.inverse();
+    }
+
+    public Matrix!(R, 3, 3) rotationMatrix()
+    {
+        Matrix!(R, 3, 3) matrix;
+
+        for(uint column; column < 3; column++)
+        {
+            Quaternion quaternionColumn = Quaternion(0);
+            quaternionColumn.vector[column] = 1;
+            quaternionColumn = this.conjugate(quaternionColumn);
+            for(uint i; i < 3; i++)
+                matrix[i, column] = quaternionColumn.vector[i];
+        }
+
+        return matrix;
+    }
 
 	public Quaternion inverse()
 	{
