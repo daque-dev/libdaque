@@ -33,7 +33,7 @@ struct Quaternion(R)
         R[] unitAxis = normalize(axis);
 		Quaternion quaternion = Quaternion([0, 0, 0, 0]);
 		quaternion.scalar = cos(amount / 2.0f);
-		quaternion.vector[] = sin(amount / 2.0f) * axis[];
+		quaternion.vector[] = sin(amount / 2.0f) * unitAxis[];
 		return quaternion;
 	}
 
