@@ -9,10 +9,15 @@ import std.math;
 
 private bool isNan(R)(R[] v)
 {
-    foreach(e; v)
-        if(isNaN(e))
-            return true;
-    return false;
+    static if(!isFloatingPoint!R)
+        return false;
+    else
+    {
+        foreach(e; v)
+            if(isNaN(e))
+                return true;
+        return false;
+    }
 }
 
 /++
