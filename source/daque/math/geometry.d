@@ -87,7 +87,7 @@ do
 R magnitudeSquared(R)(R[] v)
 out(result)
 {
-	assert(result >= 0);
+	assert(result >= 0, "magnitudeSquared " ~ to!string(v) ~ " = " ~ to!string(result) ~ " < 0");
 }
 do
 {
