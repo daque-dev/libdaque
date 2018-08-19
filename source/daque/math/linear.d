@@ -58,13 +58,13 @@ struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order = MatrixOrder
 	}
 }
 
-unittest
-{
-	import std.algorithm;
-	import std.range;
-	import std.stdio;
-	auto identityColumn = Matrix!(real, 3, 3, MatrixOrder.ColumnMajor).Identity();
-	auto identityRow = Matrix!(real, 3, 3, MatrixOrder.RowMajor).Identity();
-	writeln(identityColumn.linearize!(MatrixOrder.RowMajor)());
-	writeln(identityRow);
-}
+// unittest
+// {
+// 	import std.algorithm;
+// 	import std.range;
+// 	import std.stdio;
+// 	auto identityColumn = Matrix!(real, 3, 3, MatrixOrder.ColumnMajor).Identity();
+// 	auto identityRow = Matrix!(real, 3, 3, MatrixOrder.RowMajor).Identity();
+// 	writeln(identityColumn.linearize!(MatrixOrder.RowMajor)());
+// 	writeln(identityRow);
+// }
