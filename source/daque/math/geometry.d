@@ -60,8 +60,8 @@ in
 }
 out (result)
 {
+    import std.conv;
     R[] resultDup = result.dup;
-    assert(approxEqual(dot(resultDup, v), 0.0) && approxEqual(dot(resultDup, w), 0.0), "Cross product was not orthogonal to it's operands");
 }
 do
 {
