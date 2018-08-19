@@ -7,12 +7,21 @@ module daque.math.geometry;
 
 import std.math;
 
+private bool isNan(R)(R[] v)
+{
+    foreach(e; v)
+        if(isNaN(e))
+            return true;
+    return false;
+}
+
 /++
 	Mathematical dot product
 +/
 R dot(R)(R[] v, R[] w)
 in
 {
+    assert(!isNan(v) && !isNan(w), "Dot product argument was NaN");
 	assert(v.length == w.length, 
 		"Dot product can only be applied between to vectors of the same dimension");
 	assert(v.length > 0,
@@ -47,6 +56,7 @@ unittest
 real distance(R)(R[] v, R[] w)
 in
 {
+    assert(!isNan(v) && !isNan(w), "some distance argument was nan");
 	assert(v.length == w.length, "distance can only be calculated between same-dimensional vectors");
 }
 out
@@ -66,6 +76,7 @@ do
 R[] cross(R)(R[] v, R[] w)
 in
 {
+    assert(!isNan(v) && !isNan(w), "some cross argument was nan");
 	assert(v.length == 3 && w.length == 3, "Cross product can only be applied between 3d vectors");
 }
 out (result)
@@ -88,6 +99,7 @@ R magnitudeSquared(R)(R[] v)
 out(result)
 {
     import std.conv;
+    assert(!isNan(v), "magnitudeSquared argument was nan");
 	assert(result >= 0, "magnitudeSquared " ~ to!string(v) ~ " = " ~ to!string(result) ~ " < 0");
 }
 do
@@ -114,6 +126,7 @@ unittest{
 R[] normalize(R)(R[] v)
 in
 {
+    assert(!isNan(v), "normalize argument was nan");
 	assert(magnitudeSquared(v) != 0, "Cannot normalize a zero vector");
 }
 out(result)
