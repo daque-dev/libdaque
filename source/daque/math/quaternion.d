@@ -80,7 +80,11 @@ struct Quaternion(R)
 			result.scalar = this.scalar * rhs.scalar - dot(this.vector, rhs.vector);
 			result.vector[] = this.scalar * rhs.vector[] + this.vector[] * rhs.scalar + cross(this.vector, rhs.vector)[];
 		}
-		else 
+		else static if (op == "/")
+        {
+            return this * rhs.inverse();
+        }
+        else
 		{
 			static assert(0, "Quaternion: Unsupported operation: " ~ op);
 		}
