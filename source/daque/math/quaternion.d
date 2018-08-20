@@ -28,6 +28,17 @@ struct Quaternion(R)
         this.vector[] = 0;
     }
 
+    public this(R[3] vector)
+    {
+        this.scalar = 0;
+        this.vector[] = vector[];
+    }
+
+    public bool isRotation()
+    {
+        return approxEqual(squareAbs(), 1.0f);
+    }
+
 	static public Quaternion!R getRotation(R[3] axis, R amount)
 	{
         R[] unitAxis = normalize(axis);
