@@ -57,9 +57,9 @@ struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order = MatrixOrder
 		return identity;
 	}
 
-    float[Rows] column(uint j)
+    RealType[Rows] column(uint j)
     {
-        float[Rows] col;
+        RealType[Rows] col;
 
         for(uint i; i < Rows; i++)
         {
@@ -69,7 +69,7 @@ struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order = MatrixOrder
         return col;
     }
 
-    float[Rows] applyOn(float[] v)
+    R[Rows] applyOn(RealType[] v)
     in
     {
         assert(v.length == Columns);
@@ -80,11 +80,11 @@ struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order = MatrixOrder
     }
     do
     {
-        float[Rows] w;
+        RealType[Rows] w;
         w[] = 0;
 
         for(uint e; e < Columns; e++)
-            w[] += v[e] * this.column(e);
+            w[] += v[e] * this.column(e)[];
 
         return w;
     }
