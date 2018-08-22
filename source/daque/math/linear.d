@@ -56,7 +56,41 @@ struct Matrix(RealType, uint Rows, uint Columns, MatrixOrder Order = MatrixOrder
 				identity[i, j] = i == j;
 		return identity;
 	}
+
+    float[Rows] column(uint j)
+    {
+        float[Rows] col;
+
+        for(uint i; i < Rows; i++)
+        {
+            col[i] = this[i, j];
+        }
+
+        return col;
+    }
+
+    float[Rows] applyOn(float[] v)
+    in
+    {
+        assert(v.length == Columns);
+    }
+    out
+    {
+        assert(w.length == Rows);
+    }
+    do
+    {
+        float[Rows] w;
+        w[] = 0;
+
+        for(uint e; e < Columns; e++)
+            w[] += v[e] * this.column(e);
+
+        return w;
+    }
 }
+
+
 
 // unittest
 // {
