@@ -140,5 +140,8 @@ struct Quaternion(R)
 
 unittest
 {
+    Quaternion!float t = Quaternion!float(3);
+    assert(t.scalar == 3);
+    assert(t.vector[] == [0, 0, 0]);
 	assert(1 == 1);
 }

@@ -92,7 +92,7 @@ out (result)
 }
 do
 {
-	R[] result;
+	Unqual!R[] result;
 	result.length = 3;
 	for(uint i; i < 3; i++)
 	{
