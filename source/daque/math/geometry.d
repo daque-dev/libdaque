@@ -42,10 +42,12 @@ do
 	import std.array;
 	import std.algorithm;
 
-	R[] products;
-	products.length = v.length;
-	products[] = v[] * w[];
-	return products.array.sum;
+    Unqual!R product_sum = 0;
+
+    for(uint i; i < v.length /* = w.length */; i++)
+        product_sum += v[i] * w[i];
+
+    return product_sum;
 }
 
 ///
