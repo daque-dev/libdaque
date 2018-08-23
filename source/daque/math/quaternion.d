@@ -67,7 +67,7 @@ struct Quaternion(R)
 		return m;
 	}
 
-	public Quaternion opBinary(string op)(immutable Quaternion rhs) immutable 
+	public Quaternion opBinary(string op)(const Quaternion rhs) const 
 	{
 		Quaternion result;
 		static if (op == "+")
