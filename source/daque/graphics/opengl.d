@@ -17,7 +17,7 @@ import derelict.sdl2.image;
 import daque.math.geometry;
 import daque.math.linear;
 
-import daque.graphics.glsl;
+import glsl = daque.graphics.glsl;
 
 /// Renders an Array of vertices already on GPU memory
 void render(GpuArray vertices)
