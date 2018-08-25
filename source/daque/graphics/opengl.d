@@ -48,7 +48,7 @@ This class serves as a way to compile and use those program parts.
 The "whole" Program is another OpenGL object constructed by assembling
 many Shader s.
 +/
-class Shader
+deprecated class Shader
 {
 public:
     /// Types of shaders there can be
@@ -86,9 +86,9 @@ public:
         glDeleteShader(m_shaderGlName);
     }
 
-private:
-    immutable(GLuint) m_shaderGlName;
-    immutable(Type) m_type;
+
+    private immutable(GLuint) m_shaderGlName;
+    private immutable(Type) m_type;
     /++
 			Compiles a shader of the specified type, using as source code the file pointed to by sourcePath 
 			and returns the name of the opengl object representing the compiled shader.
@@ -155,137 +155,123 @@ private:
         }
     }
 }
+GLuint CompileShader(GLenum type, string source)
+{
+    // Create and compile
+    GLuint shader_name = glCreateShader(type);
+    const char* source_code_z_terminated = toStringz(source);
+    glShaderSource(shader_name, 1, &source_code_z_terminated, null);
+    glCompileShader(shader_name);
+
+    // Error checking
+    GLint compilation_success = 0;
+    glGetShaderiv(shader_name, GL_COMPILE_STATUS, &compilation_success);
+    // Error case
+    if (compilation_success == GL_FALSE)
+    {
+        GLint log_size = 0;
+        GLchar[] error_log;
+        glGetShaderiv(shader_name, GL_INFO_LOG_LENGTH, &log_size);
+        error_log.length = log_size;
+        glGetShaderInfoLog(shader_name, log_size, &log_size, error_log.ptr);
+        string info = cast(string) fromStringz(error_log.ptr);
+        import std.stdio : writeln;
+        glDeleteShader(shader_name);
+        writeln("COMPILATION ERROR: ", info);
+        return 0;
+    }
+
+    return shader_name;
+}
 
 /++
 Represents and handles a Program Opengl Object.
 A Program is a group of Opengl Shaders which will be linked together.
 A Program is  a program to be executed by the GPU to each of the Vertices of a model.
 +/
-class Program
+void AttachShaders(GLuint program, GLuint[] shaders)
 {
-public:
-    /++
-			Creates a new empty program
-			+/
-    this()
+    shaders.each!(s => glAttachShader(program, s));
+}
+void LinkProgram(GLuint program)
+{
+    glLinkProgram(program);
+
+    GLint is_linked = 0;
+    glGetProgramiv(program, GL_LINK_STATUS, cast(int*)&is_linked);
+    if (is_linked == GL_FALSE)
     {
-        m_programGlName = glCreateProgram();
+        import std.stdio : writeln;
+        writeln("LINKING ERROR");
     }
-    /++ 
-			Creates a program with the specified shaders already attached
-			+/
-    this(Shader[] shaders)
+}
+
+/++
+        Binds the program to the current opengl context so that it is used to process new render
+        commands
+        +/
+int GetUniformLocation(GLuint program, string name)
+{
+    return glGetUniformLocation(program, name.toStringz());
+}
+
+template strToType(string typeString)
+{
+    static if (typeString == "i")
+        alias strToType = int;
+    else static if (typeString == "f")
+        alias strToType = float;
+    else
+        static assert(0, "unrecognized string type " ~ typeString);
+}
+
+import std.conv;
+
+/++
+        Sets a integer uniform variable inside the program
+
+        Params:
+        uniformName = name of the single-valued uniform integer to be changed
+        val = new value to be assigned
+        +/
+void SetUniform(uint count, string typeString)(GLuint program, int location, void[] data)
+{
+    glUseProgram(program);
+    mixin("alias glUniform = " ~ "glUniform" ~ to!string(count) ~ typeString ~ "v;");
+    glUniform(location, cast(int)(data.length / (strToType!typeString.sizeof * count)),
+            cast(strToType!typeString*) data.ptr);
+}
+
+template matrixDimensionString(uint Rows, uint Columns)
+{
+    static if (Rows == Columns)
     {
-        this();
-        shaders.each!(s => this.attach(s));
+        enum matrixDimensionString = to!string(Rows);
     }
-
-    ~this()
+    else
     {
-        glDeleteProgram(m_programGlName);
+        enum matrixDimensionString = to!string(Rows) ~ "x" ~ to!string(Columns);
     }
-    /++
-			Attaches the shader to this program
+}
 
-			Params:
-			shader = Shader to be attached
-			+/
-    void attach(Shader shader)
-    {
-        glAttachShader(m_programGlName, shader.m_shaderGlName);
-    }
-    /++
-			Links the currently attached shaders
-			+/
-    void link()
-    {
-        glLinkProgram(m_programGlName);
+// TODO: TEST
+void SetUniformMatrix(uint Rows, uint Columns, RealType)(GLuint program, int location,
+        Matrix!(RealType, Rows, Columns) matrix)
+{
+    mixin("alias UniformMatrix = glUniformMatrix" 
+            ~ matrixDimensionString!(Rows, Columns) ~ "fv;");
 
-        GLint isLinked = 0;
-        glGetProgramiv(m_programGlName, GL_LINK_STATUS, cast(int*)&isLinked);
-        if (isLinked == GL_FALSE)
-        {
-            import std.stdio : writeln;
+    RealType[] linearization = matrix.linearize!(MatrixOrder.ColumnMajor)();
+    assert(linearization.length == Rows * Columns);
 
-            writeln("LINKING ERROR");
-        }
-    }
+    glUseProgram(program);
+    UniformMatrix(location, 1, GL_FALSE, cast(const GLfloat*) linearization.ptr);
+}
 
-    /++
-			Binds the program to the current opengl context so that it is used to process new render
-			commands
-			+/
-    void use()
-    {
-        glUseProgram(m_programGlName);
-    }
-
-    int getUniformLocation(string name)
-    {
-        return glGetUniformLocation(m_programGlName, name.toStringz());
-    }
-
-    template strToType(string typeString)
-    {
-        static if (typeString == "i")
-            alias strToType = int;
-        else static if (typeString == "f")
-            alias strToType = float;
-        else
-            static assert(0, "unrecognized string type " ~ typeString);
-    }
-
-    import std.conv;
-
-    /++
-			Sets a integer uniform variable inside the program
-
-			Params:
-			uniformName = name of the single-valued uniform integer to be changed
-			val = new value to be assigned
-			+/
-    void setUniform(uint count, string typeString)(int location, void[] data)
-    {
-        this.use();
-        mixin("alias glUniform = " ~ "glUniform" ~ to!string(count) ~ typeString ~ "v;");
-        glUniform(location, cast(int)(data.length / (strToType!typeString.sizeof * count)),
-                cast(strToType!typeString*) data.ptr);
-    }
-
-    template matrixDimensionString(uint Rows, uint Columns)
-    {
-        static if (Rows == Columns)
-        {
-            enum matrixDimensionString = to!string(Rows);
-        }
-        else
-        {
-            enum matrixDimensionString = to!string(Rows) ~ "x" ~ to!string(Columns);
-        }
-    }
-
-    // TODO: TEST
-    void setUniformMatrix(uint Rows, uint Columns, RealType)(int location,
-            Matrix!(RealType, Rows, Columns) matrix)
-    {
-        mixin("alias uniformMatrix = glUniformMatrix" ~ matrixDimensionString!(Rows,
-                Columns) ~ "fv;");
-        RealType[] linearization = matrix.linearize!(MatrixOrder.ColumnMajor)();
-        assert(linearization.length == Rows * Columns);
-
-        uniformMatrix(location, 1, GL_FALSE, cast(const GLfloat*) linearization.ptr);
-    }
-
-    void getUniform(string typeString)(int location, strToType!typeString* output)
-    {
-        mixin("alias glGetUniform = glGetUniform" ~ typeString ~ "v;");
-        glGetUniform(m_programGlName, location, output);
-    }
-
-private:
-    // associated Opengl Object Program's name
-    immutable(GLuint) m_programGlName;
-
+void GetUniform(string typeString)(int location, strToType!typeString* output)
+{
+    mixin("alias glGetUniform = glGetUniform" ~ typeString ~ "v;");
+    glGetUniform(m_programGlName, location, output);
 }
 
 /++
