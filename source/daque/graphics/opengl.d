@@ -17,6 +17,8 @@ import derelict.sdl2.image;
 import daque.math.geometry;
 import daque.math.linear;
 
+import daque.graphics.glsl;
+
 /// Renders an Array of vertices already on GPU memory
 void render(GpuArray vertices)
 {
@@ -226,7 +228,6 @@ template strToType(string typeString)
 }
 
 import std.conv;
-
 /++
         Sets a integer uniform variable inside the program
 
@@ -234,10 +235,10 @@ import std.conv;
         uniformName = name of the single-valued uniform integer to be changed
         val = new value to be assigned
         +/
-void SetUniform(uint count, string typeString)(GLuint program, int location, void[] data)
+void SetUniform(glsl.Type type)(GLuint program, int location, void[] data)
 {
     glUseProgram(program);
-    mixin("alias glUniform = " ~ "glUniform" ~ to!string(count) ~ typeString ~ "v;");
+    mixin("alias glUniform = " ~ "glUniform" ~ glsl.GetUniformPostfix(type) ~ ";");
     glUniform(location, cast(int)(data.length / (strToType!typeString.sizeof * count)),
             cast(strToType!typeString*) data.ptr);
 }
