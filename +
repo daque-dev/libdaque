@@ -11,8 +11,6 @@ import daque.graphics.attributeformat;
 import derelict.opengl;
 
 /++
-Glsl Module:
-    - Purpose: 
 
 Structs defined in this: 
     ScalarType:
@@ -25,12 +23,12 @@ Structs defined in this:
     MatrixType:
         A Matrix of mxn floats
 
-    GlslBasicType:
+    SimpleType:
         Can be one of the following: 
             - ScalarType, VectorType or MatrixType
 
-    GlslArrayOrGlslBasicType:
-        Can be an array or not of GlslBasicType values
+    ArrayOrSimpleType:
+        Can be an array or not of SimpleType values
 
     Declaration;
     Uniform(Declaration declaration);
@@ -197,16 +195,6 @@ struct ScalarType
     {
         final switch(type)
         {
-            case Enum.Bool:
-                return "bool";
-            case Enum.Int: 
-                return "int";
-            case Enum.Uint: 
-                return "uint";
-            case Enum.Float: 
-                return "float"; 
-            case Enum.Double: 
-                return "double";
         }
     }
 }   
@@ -300,6 +288,7 @@ struct MatrixType
             success = false;
             return matrix_type;
         }
+
         if (second.empty)
         {
             matrix_type.columns = matrix_type.rows = to!uint(first);
@@ -315,7 +304,7 @@ struct MatrixType
     }
 }
 
-struct GlslBasicType
+struct SimpleType
 {
     enum TypeSelection
     {
@@ -338,7 +327,7 @@ struct GlslBasicType
             case TypeSelection.Scalar: 
                 return type.scalar_type.To_String();
             case TypeSelection.Vector:
-                return type.vector_type.To_String();
+                return type.vector_typè.To_String();
             case TypeSelection.Matrix:
                 return type.matrix_type.To_String();
         }
@@ -396,72 +385,72 @@ struct GlslBasicType
         }
     }
 
-    static GlslBasicType From_String(string str, out bool success)
+    static SimpleType From_String(string str, out bool success)
     {
-        GlslBasicType glsl_basic_type;
+        SimpleType glsl_type;
         bool read_success;
         {
-            glsl_basic_type.selection = TypeSelection.Scalar;
-            glsl_basic_type.type.scalar_type = ScalarType.From_String(str, read_success);
+            glsl_type.selection = TypeSelection.Scalar;
+            glsl_type.type.scalar_type = ScalarType.From_String(str, read_success);
             if(read_success)
             {
                 success = true;
-                return glsl_basic_type;
+                return glsl_type;
+            }
+        }
+            {
+            glsl_type.selection = TypeSelection.Vector;
+            glsl_type.type.vector_type = VectorType.From_String(str, read_success);
+            if(read_success)
+            {
+                success = true;
+                return glsl_type;
             }
         }
         {
-            glsl_basic_type.selection = TypeSelection.Vector;
-            glsl_basic_type.type.vector_type = VectorType.From_String(str, read_success);
+            glsl_type.selection = TypeSelection.Matrix;
+            glsl_type.type.matrix_type = MatrixType.From_String(str, read_success);
             if(read_success)
             {
                 success = true;
-                return glsl_basic_type;
-            }
-        }
-        {
-            glsl_basic_type.selection = TypeSelection.Matrix;
-            glsl_basic_type.type.matrix_type = MatrixType.From_String(str, read_success);
-            if(read_success)
-            {
-                success = true;
-                return glsl_basic_type;
+                return glsl_type;
             }
         }
 
         success = false;
-        return glsl_basic_type;
+        return glsl_type;
     }
 
-    static GlslBasicType From_String_Safe(string str) 
+    static SimpleType From_String_Safe(string str) 
     {
         bool success;
-        GlslBasicType glsl_basic_type = From_String(str, success);
+        SimpleType glsl_type = From_String(str, success);
         assert(success);
-        return glsl_basic_type;
+        return glsl_type;
     }
 }
 
-struct GlslArrayOrGlslBasicType 
+struct ArrayOrSimpleType 
 {
-    GlslBasicType glsl_basic_type;
+    SimpleType glsl_type;
     uint no_elements;
     bool is_array;
 
     string To_DlangType()
     {
-        if (is_array)
+        if(!is_array)
         {
-            return glsl_basic_type.To_DlangType() ~ "[" ~ to!string(no_elements) ~ "]";
+            return glsl_type.To_DlangType();
         }
         else
         {
-            return glsl_basic_type.To_DlangType();
+            return glsl_type.To_DlangType() ~ "[" ~ to!string(no_elements) ~ "]";
         }
     }
 
-    static GlslArrayOrGlslBasicType From_String(string str, out bool success) 
+    static ArrayOrSimpleType From_String(string str, out bool success) 
     {
-        GlslArrayOrGlslBasicType array_or_glsl_basic_type;
+        ArrayOrSimpleType array_or_simple_type;
         success = true;
         auto split = findSplitBefore(str, "[");
         string first = split[0];
@@ -469,46 +458,45 @@ struct GlslArrayOrGlslBasicType
 
         if(!second.empty)
         {
-            array_or_glsl_basic_type.glsl_basic_type = GlslBasicType.From_String(first, success);
-            second.formattedRead!"[%s]"(array_or_glsl_basic_type.no_elements);
-            array_or_glsl_basic_type.is_array = true;
-            return array_or_glsl_basic_type;
+            array_or_simple_type.glsl_type = SimpleType.From_String(first, success);
+            second.formattedRead!"[%s]"(array_or_simple_type.no_elements);
+            array_or_simple_type.is_array = true;
+            return array_or_simple_type;
         }
         else if(!first.empty)
         {
-            array_or_glsl_basic_type.glsl_basic_type = GlslBasicType.From_String(first, success);
-            array_or_glsl_basic_type.no_elements = 1;
-            array_or_glsl_basic_type.is_array = false;
-            return array_or_glsl_basic_type;
+            array_or_simple_type.glsl_type = SimpleType.From_String(first, success);
+            array_or_simple_type.no_elements = 1;
+            array_or_simple_type.is_array = false;
+            return array_or_simple_type;
         }
         else
         {
             success = false;
-            return array_or_glsl_basic_type;
+            return array_or_simple_type;
         }
     }
 
-    static GlslArrayOrGlslBasicType From_String_Safe(string str) 
+    static ArrayOrSimpleType From_String_Safe(string str) 
     {
         bool success;
-        GlslArrayOrGlslBasicType array_or_glsl_basic_type = From_String(str, success);
+        ArrayOrSimpleType array_or_simple_type = From_String(str, success);
         assert(success);
-        return array_or_glsl_basic_type;
+        return array_or_simple_type;
     }
 }
 
 struct Declaration
 {
-    GlslArrayOrGlslBasicType type;
+    ArrayOrSimpleType type;
     string identifier;
 
-    // EXPECTED BUG: IT WILL NOT WORK FOR ARRAYS
     static Declaration From_String(string str)
     {
         auto split = split(str, " ");
         Declaration declaration;
         assert(split.length == 2);
-        declaration.type = GlslArrayOrGlslBasicType.From_String_Safe(split[0]);
+        declaration.type = ArrayOrSimpleType.From_String_Safe(split[0]);
         declaration.identifier = split[1];
         return declaration;
     }
@@ -516,9 +504,9 @@ struct Declaration
     string To_String()
     {
         if(type.is_array)
-            return type.glsl_basic_type.To_String() ~ " " ~ identifier ~ "[" ~ to!string(type.no_elements) ~ "]";
+            return type.glsl_type.To_String() ~ " " ~ identifier ~ "[" ~ type.no_elements ~ "]";
         else
-            return type.glsl_basic_type.To_String() ~ " " ~ identifier;
+            return type.glsl_type.To_String() ~ " " ~ identifier;
     }
 
     string To_Dlang_Declaration()
@@ -541,22 +529,22 @@ struct Uniform(Declaration declaration)
 
     void Set(Type value)
     {
-        static if (declaration.type.glsl_basic_type.selection == GlslBasicType.TypeSelection.Scalar && !declaration.type.is_array)
+        static if (declaration.type.glsl_type.selection == SimpleType.TypeSelection.Scalar && !declaration.type.is_array)
         {
-            enum string Type_Little_String = declaration.type.glsl_basic_type.Get_LittleString_Representation();
-            mixin("alias ProgramUniform = glProgramUniform" ~ Type_Little_String ~ "v;");
+            enum string Little_String_Type = declaration.type.glsl_type.Get_LittleString_Representation();
+            mixin("alias ProgramUniform = glProgramUniform" ~ Little_String_Type ~ "v;");
             ProgramUniform(program, location, 1, &value);
         }
-        else static if (declaration.type.glsl_basic_type.selection == GlslBasicType.TypeSelection.Matrix)
+        else static if (declaration.type.glsl_type.selection == SimpleType.TypeSelection.Vector)
+        {
+            enum string Little_String_Type = declaration.type.glsl_type.Get_LittleString_Representation();
+            mixin("alias ProgramUniform = glProgramUniform" ~ Little_String_Type ~ "v;");
+            ProgramUniform(program, location, declaration.type.no_elements, value.ptr);
+        }
+        else static if (declaration.type.glsl_type.selection == SimpleType.TypeSelection.Matrix)
         {
             // TODO: Support Matrix Uniform setting
             static assert(0, "MATRIX UNIFORM NOT SUPPORTED");
-        }
-        else 
-        {
-            enum string Type_Little_String = declaration.type.glsl_basic_type.Get_LittleString_Representation();
-            mixin("alias ProgramUniform = glProgramUniform" ~ Type_Little_String ~ "v;");
-            ProgramUniform(program, location, declaration.type.no_elements, value.ptr);
         }
     }
 
@@ -579,7 +567,7 @@ struct LayoutInput
     string To_String()
     {
         assert(location >= 0);
-        return "layout (location = " ~ to!string(location) ~ ") in " ~ declaration.To_String();
+        return "layout (location = " ~ to!string(location) ~ ") in " ~ declaration.To_String() ~ ";";
     }
 }
 
@@ -598,79 +586,50 @@ struct ShaderDescriptor
     Declaration[] outputs;
     string source;
 
+    /*
     string Get_Full_Source()
     {
         string full_source; 
 
-        full_source ~= glsl_version;
-        full_source ~= '\n';
-
         foreach(LayoutInput layout_input; layout_inputs)
         {
-            full_source ~= layout_input.To_String() ~ ";";
-            full_source ~= '\n';
+            full_source ~= layout_input.To_String();
         }
 
-        foreach(Declaration input; inputs)
+        foreach(auto input; inputs)
         {
-            full_source ~= "in " ~ input.To_String() ~ ";";
-            full_source ~= '\n';
+            full_source ~=
         }
-
-        foreach(Declaration uniform; uniforms)
-        {
-            full_source ~= "uniform " ~ uniform.To_String() ~ ";";
-            full_source ~= '\n';
-        }
-
-        foreach(Declaration output; outputs)
-        {
-            full_source ~= "out " ~ output.To_String() ~ ";";
-            full_source ~= '\n';
-        }
-
-        full_source ~= source;
 
         return full_source;
     }
+    */
 }
 
 import daque.graphics.opengl;
 
-struct Program(ProgramDescriptor PROGRAM_DESCRIPTOR)
+struct Program(ProgramDescriptor Program_Descriptor)
 {
     int vertex_shader, fragment_shader;
     int program_id;
 
-    alias Vertex = VertexType!(PROGRAM_DESCRIPTOR.vertex_shader.layout_inputs);
+    alias Vertex = VertexType!(Program_Descriptor.vertex_shader.layout_inputs);
 
-    static foreach(Declaration UNIFORM_DECLARATION; PROGRAM_DESCRIPTOR.vertex_shader.uniforms)
+    static foreach(Declaration Uniform_Declaration; Program_Descriptor.vertex_shader.uniforms)
     {
-        mixin(q{Uniform!(UNIFORM_DECLARATION) } ~ UNIFORM_DECLARATION.identifier ~ ";");
+        mixin(q{Uniform!(Uniform_Declaration) } ~ Uniform_Declaration.identifier ~ ";");
     }
 
     void init()
     {
         program_id = glCreateProgram();
-
-        vertex_shader = Compile_Shader(GL_VERTEX_SHADER, 
-                PROGRAM_DESCRIPTOR.vertex_shader.Get_Full_Source());
-
-        fragment_shader = Compile_Shader(GL_FRAGMENT_SHADER, 
-                PROGRAM_DESCRIPTOR.fragment_shader.Get_Full_Source());
-
-        Attach_Shaders(program_id, [vertex_shader, fragment_shader]);
-
-        Link_Program(program_id);
     }
-    
-
 }
 
-enum ProgramDescriptor Testing_Program = 
+enum ProgramDescriptor Perspective_Program = 
 {
     vertex_shader: {
-        glsl_version: "#version 330 core",
+        glsl_version: "330 core",
         layout_inputs: [
             {0, Declaration.From_String("vec3 position"), normalized: LayoutInput.Normalized.DONT_NORMALIZE}, 
             {1, Declaration.From_String("vec4 color"), normalized: LayoutInput.Normalized.NORMALIZE}
@@ -688,14 +647,14 @@ enum ProgramDescriptor Testing_Program =
         source: q{
             void main()
             {
-                vec3 rotated = position;
+                vec3 rotated = rotation * position;
                 vec3 translated = rotated + translation;
-                gl_Position = vec4(position, 1);
+                gl_Position = perspective;
             }
         }
     },
     fragment_shader: {
-        glsl_version: "#version 330 core",
+        glsl_version: "330 core",
         outputs: [
             Declaration.From_String("vec4 final_color")
         ],
@@ -731,8 +690,8 @@ template VertexType(LayoutInput[] Layout_Inputs)
                 {
                     AttributeFormat format = {
                         index: Layout_Input.location,
-                        size: Layout_Input.declaration.type.glsl_basic_type.Get_No_Components(), 
-                        type: Layout_Input.declaration.type.glsl_basic_type.Get_Gl_Type(),
+                        size: Layout_Input.declaration.type.glsl_type.Get_No_Components(), 
+                        type: Layout_Input.declaration.type.glsl_type.Get_Gl_Type(),
                         normalized: Layout_Input.normalized? GL_TRUE: GL_FALSE,
                         stride: this.sizeof,
                         pointer: cast(void*) this." ~ Layout_Input.declaration.identifier ~ r".offsetof
@@ -756,17 +715,30 @@ unittest
     import daque.graphics.sdl;
     import derelict.sdl2.sdl;
     import std.stdio;
-
-    writeln("GLSL MODULE");
+    writeln("TESTING GLSL MODULE");
 
     Window window = new Window("something", 800, 600);
+    Program!Perspective_Program perspective;
+    perspective.z_near = 0.13f;
 
-    Program!Testing_Program testing_program;
-    testing_program.init();
-    testing_program.z_near = 0.13f;
-
-    testing_program.Vertex v;
+    perspective.Vertex v;
     v.position[] = [2, 3, 4];
     v.color[] = [123, 21, 31, 3];
+
+    while(window.isOpen())
+    {
+        SDL_Event event;
+        while(SDL_PollEvent(&event))
+        {
+            switch(event.type)
+            {
+                case SDL_QUIT:
+                    window.close();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }
 
