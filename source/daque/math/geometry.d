@@ -1,114 +1,147 @@
+/++
+Authors: 
+	Miguel Ángel (quevangel), quevangel@protonmail.com
+	David Omar Flores Chávez (davidomarf), davidomarfch@gmail.com
++/
 module daque.math.geometry;
 
 import std.math;
+import std.traits;
 
-void geometryTest()
+private bool isNan(R)(R[] v) if (isNumeric!R)
 {
-	import std.stdio;
-	writeln("daque geometry correctly linked");
+    static if (!isFloatingPoint!R)
+        return false;
+    else
+    {
+        foreach (e; v)
+            if (isNaN(e))
+                return true;
+        return false;
+    }
 }
 
 /++
-    Mathematical dot product
+	Mathematical dot product
 +/
-R dot(R)(R[] v, R[] w)
+R dot(R)(R[] v, R[] w) if (isNumeric!R)
 in
 {
-    assert(v.length == w.length, "Dot product can only be applied between to vectors of the same dimension");
-}
-out
-{
-
+    assert(!isNan(v) && !isNan(w), "Dot product argument was NaN");
+    assert(v.length == w.length,
+            "Dot product can only be applied between to vectors of the same dimension");
+    assert(v.length > 0, "Dot product can't be performed on empty vectors");
 }
 do
 {
-	import std.array;
-	import std.algorithm;
+    import std.array;
+    import std.algorithm;
 
-	R[] products;
-	products.length = v.length;
-	products[] = v[] * w[];
-	return products.array.sum;
+    Unqual!R product_sum = 0;
+
+    for (uint i; i < v.length /* = w.length */ ; i++)
+        product_sum += v[i] * w[i];
+
+    return product_sum;
+}
+
+///
+unittest
+{
+    assert(dot([1, 0], [0, 1]) == 0);
+    assert(dot([1, 0], [1, 0]) == 1);
+    assert(dot([1, 2, 3], [1, 2, 3]) == 14);
 }
 
 /++
 	Mathematical distance between to points
 +/
-real distance(R)(R[] v, R[] w)
+real distance(R)(R[] v, R[] w) if (isNumeric!R)
 in
 {
-	assert(v.length == w.length, "distance can only be calculated between same-dimensional vectors");
+    assert(!isNan(v) && !isNan(w), "some distance argument was nan");
+    assert(v.length == w.length, "distance can only be calculated between same-dimensional vectors");
 }
 out
 {
 }
 do
 {
-	R[] diff;
-	diff.length = v.length;
-	diff[] = w[] - v[];
-	return magnitude(diff);
+    Unqual!R[] diff;
+    diff.length = v.length;
+    diff[] = w[] - v[];
+    return magnitude(diff);
 }
 
 /++
-    Mathematical cross product
+	Mathematical cross product
 +/
-R[] cross(R)(R[] v, R[] w)
+R[] cross(R)(R[] v, R[] w) if (isNumeric!R)
 in
 {
+    assert(!isNan(v) && !isNan(w), "some cross argument was nan");
     assert(v.length == 3 && w.length == 3, "Cross product can only be applied between 3d vectors");
 }
 out (result)
 {
-    R[] resultDup = result.dup;
-    assert(approxEqual(dot(resultDup, v), 0.0) && approxEqual(dot(resultDup, w), 0.0), "Cross product was not orthogonal to it's operands");
 }
 do
 {
-    R[] result;
+    Unqual!R[] result;
     result.length = 3;
-    for(uint i; i < 3; i++)
+    for (uint i; i < 3; i++)
     {
-        int j = (i + 1) % 3; 
+        int j = (i + 1) % 3;
         int k = (j + 1) % 3;
         result[i] = v[j] * w[k] - v[k] * w[j];
     }
     return result;
 }
 
-R magnitudeSquared(R)(R[] v)
-out(result)
+R magnitudeSquared(R)(R[] v) if (isNumeric!R)
+out (result)
 {
-	assert(result >= 0);
+    import std.conv;
+
+    assert(!isNan(v), "magnitudeSquared argument was nan");
+    assert(result >= 0, "magnitudeSquared " ~ to!string(v) ~ " = " ~ to!string(result) ~ " < 0");
 }
 do
 {
-	return dot(v, v);
+    return dot(v, v);
 }
 
-real magnitude(R)(R[] v)
+real magnitude(R)(R[] v) if (isNumeric!R)
 {
-	return sqrt(cast(real)magnitudeSquared(v));
+    return sqrt(cast(real) magnitudeSquared(v));
 }
 
-R[] normalize(R)(R[] v)
-in
-{
-	assert(magnitudeSquared(v) != 0, "Cannot normalize a zero vector");
-}
-out(result)
-{
-	assert(approxEqual(magnitudeSquared(result.dup), 1), "Normalized vector wasn't unitary");
-}
-do
-{
-	R[] normalized;
-	normalized.length = v.length;
-	normalized[] = v[] / magnitude(v);
-	return normalized;
-}
-
+///
 unittest
 {
-	assert(distance([0.0, 0.0], [0.5, 0.5]) != 0.0);
+    import daque.utils.test;
+
+    Tester test = new Tester("Magnitude");
+
+    test.approx!(magnitude!double)([0.0], 0.0);
+    test.approx!(magnitude!double)([1.0, 1.0], sqrt(2.0));
+    test.approx!(magnitude!double)([1.0, 3.0], 0.0);
+}
+
+R[] normalize(R)(R[] v) if (isNumeric!R)
+in
+{
+    assert(!isNan(v), "normalize argument was nan");
+    assert(magnitudeSquared(v) != 0, "Cannot normalize a zero vector");
+}
+out (result)
+{
+    assert(approxEqual(magnitudeSquared(result.dup), 1), "Normalized vector wasn't unitary");
+}
+do
+{
+    R[] normalized;
+    normalized.length = v.length;
+    normalized[] = v[] / magnitude(v);
+    return normalized;
 }
