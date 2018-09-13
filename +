@@ -1,0 +1,744 @@
+module daque.graphics.glsl;
+
+import std.format;
+import std.conv;
+import std.algorithm.searching;
+import std.range;
+import std.string;
+
+import daque.graphics.attributeformat;
+
+import derelict.opengl;
+
+/++
+
+Structs defined in this: 
+    ScalarType:
+        Can be one of the following:
+            - Bool, Int, Uint, Float or Double
+
+    VectorType:
+        Is a vector of 2, 3 or 4 ScalarType's
+        
+    MatrixType:
+        A Matrix of mxn floats
+
+    SimpleType:
+        Can be one of the following: 
+            - ScalarType, VectorType or MatrixType
+
+    ArrayOrSimpleType:
+        Can be an array or not of SimpleType values
+
+    Declaration;
+    Uniform(Declaration declaration);
+    LayoutInput;
+    ProgramDescriptor;
+    ShaderDescriptor;
+    Program(ProgramDescriptor Program_Descriptor);
+    VertexType(LayoutInput[] Layout_Inputs);
++/
+
+struct ScalarType
+{
+    private enum Enum
+    {
+        Bool,
+        Int,
+        Uint, 
+        Float,
+        Double
+    }
+    Enum type;
+
+    string To_DlangType()
+    {
+        final switch(type)
+        {
+            case Enum.Bool:
+                return "bool";
+            case Enum.Int: 
+                return "int";
+            case Enum.Uint: 
+                return "uint";
+            case Enum.Float:
+                return "float";
+            case Enum.Double: 
+                return "double";
+        }
+    }
+
+    GLenum Get_Gl_Type()
+    {
+        final switch(type)
+        {
+            case Enum.Bool:
+                assert(0, "UNSUPPORTED");
+            case Enum.Int: 
+                return GL_INT;
+            case Enum.Uint: 
+                return GL_UNSIGNED_INT;
+            case Enum.Float:
+                return GL_FLOAT;
+            case Enum.Double: 
+                return GL_DOUBLE;
+        }  
+    }
+
+    static ScalarType From_String(string str, out bool success) 
+    {
+        ScalarType scalar_type;
+        switch(str)
+        {
+            case "bool":
+                scalar_type.type = Enum.Bool;
+                success = true;
+                break;
+            case "int":
+                scalar_type.type = Enum.Int;
+                success = true;
+                break;
+            case "uint":
+                scalar_type.type = Enum.Uint;
+                success = true;
+                break;
+            case "float":
+                scalar_type.type = Enum.Float;
+                success = true;
+                break;
+            case "double":
+                scalar_type.type = Enum.Double;
+                success = true;
+                break;
+            default: 
+                success = false;
+        }
+        return scalar_type;
+    }
+
+    static ScalarType From_Char(char c, out bool success) 
+    {
+        ScalarType scalar_type;
+        switch(c)
+        {
+            case 'b':
+                scalar_type.type = Enum.Bool;
+                success = true;
+                break;
+            case 'i':
+                scalar_type.type = Enum.Int;
+                success = true;
+                break;
+            case 'u':
+                scalar_type.type = Enum.Uint;
+                success = true;
+                break;
+            case 'f':
+                scalar_type.type = Enum.Float;
+                success = true;
+                break;
+            case 'd': 
+                scalar_type.type = Enum.Double;
+                success = true;
+                break;
+            default:
+                success = false;
+        }
+        return scalar_type;
+    }
+
+    char To_Char()
+    {
+        final switch(type)
+        {
+            case Enum.Bool:
+                return 'b';
+            case Enum.Int:
+                return 'i';
+            case Enum.Uint:
+                return 'u';
+            case Enum.Float:
+                return 'f';
+            case Enum.Double:
+                return 'd';
+        }
+    }
+
+    /++
+        Gets a "little string" representation of the scalar type represented by this.
+
+        The little string representation depends on the type.
+            LittleString(Bool) => 1b
+            LittleString(Int) => 1i
+            LittleString(Uint) => 1ui
+            LittleString(Float) => 1f
+            LittleString(Double) => 1d
+    +/
+    string Get_LittleString_Representation()
+    {
+        final switch(type)
+        {
+            case Enum.Bool:
+                return "1b";
+            case Enum.Int:
+                return "1i";
+            case Enum.Uint: 
+                return "1ui";
+            case Enum.Float: 
+                return "1f";
+            case Enum.Double: 
+                return "1d";
+        }
+    }
+
+    string To_String()
+    {
+        final switch(type)
+        {
+        }
+    }
+}   
+
+struct VectorType
+{
+    ScalarType scalar_type;
+    uint components = 2;
+
+    string To_DlangType()
+    {
+        return scalar_type.To_DlangType() ~ "[" ~ to!string(components) ~ "]";
+    }
+
+    string To_String()
+    {
+        if(scalar_type.type == ScalarType.Enum.Float)
+        {
+            return "vec" ~ to!string(components);
+        }
+        else
+        {
+            return scalar_type.To_Char() ~ "vec" ~ to!string(components);
+        }
+    }
+
+    static VectorType From_String(string str, out bool success) 
+    {
+        success = true;
+
+        char start_char = str[0];
+        if (start_char != 'v')
+            str = str[1 .. $];
+        else
+            start_char = 'f';
+
+        VectorType vector_type;
+        vector_type.scalar_type = ScalarType.From_Char(start_char, success);
+        uint valid_reads;
+        valid_reads = str.formattedRead!"vec%s"(vector_type.components);
+        if(valid_reads != 1)
+            success = false;
+
+        return vector_type;
+    }
+
+    string Get_LittleString_Representation()
+    {
+        return to!string(components) ~ scalar_type.To_Char();
+    }
+}
+
+struct MatrixType
+{
+    uint columns, rows;
+
+    string To_DlangType()
+    {
+        return "Matrix!(float, " ~ to!string(rows) ~ ", " ~ to!string(columns) ~ ")";
+    }
+
+    string To_String()
+    {
+        return "mat" ~ to!string(rows) ~ "x" ~ to!string(columns);
+    }
+
+    static MatrixType From_String(string str, out bool success) 
+    {
+        MatrixType matrix_type;
+
+        if(str[0 .. 3] != "mat")
+        {
+            success = false;
+            return matrix_type;
+        }
+
+        str = str[3 .. $];
+
+        if(!(str.length == 3 || str.length == 1))
+        {
+            success = false;
+            return matrix_type;
+        }
+
+        auto split = findSplit(str, "x");
+        string first = split[0];
+        string second = split[1];
+
+        if(first.empty)
+        {
+            success = false;
+            return matrix_type;
+        }
+
+        if (second.empty)
+        {
+            matrix_type.columns = matrix_type.rows = to!uint(first);
+        }
+        else
+        {
+            matrix_type.rows = to!uint(first);
+            matrix_type.columns = to!uint(split[2]);
+        }
+
+        success = true;
+        return matrix_type;
+    }
+}
+
+struct SimpleType
+{
+    enum TypeSelection
+    {
+        Scalar, Vector, Matrix
+    }
+    TypeSelection selection;
+
+    union Type
+    {
+        ScalarType scalar_type;
+        VectorType vector_type;
+        MatrixType matrix_type;
+    }
+    Type type;
+
+    string To_String()
+    {
+        final switch(selection)
+        {
+            case TypeSelection.Scalar: 
+                return type.scalar_type.To_String();
+            case TypeSelection.Vector:
+                return type.vector_typè.To_String();
+            case TypeSelection.Matrix:
+                return type.matrix_type.To_String();
+        }
+    }
+
+    string Get_LittleString_Representation()
+    {
+        final switch(selection)
+        {
+            case TypeSelection.Scalar: 
+                return type.scalar_type.Get_LittleString_Representation();
+            case TypeSelection.Vector:
+                return type.vector_type.Get_LittleString_Representation();
+            case TypeSelection.Matrix:
+                assert(0, "MATRIX DOESN'T HAVE LITTLESTRING REPRESENTATION");
+        }
+    }
+
+    uint Get_No_Components()
+    {
+        final switch(selection)
+        {
+            case TypeSelection.Scalar: 
+                return 1;
+            case TypeSelection.Vector: 
+                return type.vector_type.components;
+            case TypeSelection.Matrix:
+                assert(0, "MATRIX DOESNT HAVE NO COMPONENTS");
+        }
+    }
+
+    GLenum Get_Gl_Type()
+    {
+        final switch(selection)
+        {
+            case TypeSelection.Scalar: 
+                return type.scalar_type.Get_Gl_Type();
+            case TypeSelection.Vector: 
+                return type.vector_type.scalar_type.Get_Gl_Type();
+            case TypeSelection.Matrix:
+                assert(0, "MATRIX DOESNT HAVE GL TYPE");
+        }
+    }
+
+    string To_DlangType()
+    {
+        final switch(selection)
+        {
+            case TypeSelection.Scalar:
+                return type.scalar_type.To_DlangType();
+            case TypeSelection.Vector: 
+                return type.vector_type.To_DlangType();
+            case TypeSelection.Matrix:
+                return type.matrix_type.To_DlangType();
+        }
+    }
+
+    static SimpleType From_String(string str, out bool success)
+    {
+        SimpleType glsl_type;
+        bool read_success;
+        {
+            glsl_type.selection = TypeSelection.Scalar;
+            glsl_type.type.scalar_type = ScalarType.From_String(str, read_success);
+            if(read_success)
+            {
+                success = true;
+                return glsl_type;
+            }
+        }
+            {
+            glsl_type.selection = TypeSelection.Vector;
+            glsl_type.type.vector_type = VectorType.From_String(str, read_success);
+            if(read_success)
+            {
+                success = true;
+                return glsl_type;
+            }
+        }
+        {
+            glsl_type.selection = TypeSelection.Matrix;
+            glsl_type.type.matrix_type = MatrixType.From_String(str, read_success);
+            if(read_success)
+            {
+                success = true;
+                return glsl_type;
+            }
+        }
+
+        success = false;
+        return glsl_type;
+    }
+
+    static SimpleType From_String_Safe(string str) 
+    {
+        bool success;
+        SimpleType glsl_type = From_String(str, success);
+        assert(success);
+        return glsl_type;
+    }
+}
+
+struct ArrayOrSimpleType 
+{
+    SimpleType glsl_type;
+    uint no_elements;
+    bool is_array;
+
+    string To_DlangType()
+    {
+        if(!is_array)
+        {
+            return glsl_type.To_DlangType();
+        }
+        else
+        {
+            return glsl_type.To_DlangType() ~ "[" ~ to!string(no_elements) ~ "]";
+        }
+    }
+
+    static ArrayOrSimpleType From_String(string str, out bool success) 
+    {
+        ArrayOrSimpleType array_or_simple_type;
+        success = true;
+        auto split = findSplitBefore(str, "[");
+        string first = split[0];
+        string second = split[1];
+
+        if(!second.empty)
+        {
+            array_or_simple_type.glsl_type = SimpleType.From_String(first, success);
+            second.formattedRead!"[%s]"(array_or_simple_type.no_elements);
+            array_or_simple_type.is_array = true;
+            return array_or_simple_type;
+        }
+        else if(!first.empty)
+        {
+            array_or_simple_type.glsl_type = SimpleType.From_String(first, success);
+            array_or_simple_type.no_elements = 1;
+            array_or_simple_type.is_array = false;
+            return array_or_simple_type;
+        }
+        else
+        {
+            success = false;
+            return array_or_simple_type;
+        }
+    }
+
+    static ArrayOrSimpleType From_String_Safe(string str) 
+    {
+        bool success;
+        ArrayOrSimpleType array_or_simple_type = From_String(str, success);
+        assert(success);
+        return array_or_simple_type;
+    }
+}
+
+struct Declaration
+{
+    ArrayOrSimpleType type;
+    string identifier;
+
+    static Declaration From_String(string str)
+    {
+        auto split = split(str, " ");
+        Declaration declaration;
+        assert(split.length == 2);
+        declaration.type = ArrayOrSimpleType.From_String_Safe(split[0]);
+        declaration.identifier = split[1];
+        return declaration;
+    }
+
+    string To_String()
+    {
+        if(type.is_array)
+            return type.glsl_type.To_String() ~ " " ~ identifier ~ "[" ~ type.no_elements ~ "]";
+        else
+            return type.glsl_type.To_String() ~ " " ~ identifier;
+    }
+
+    string To_Dlang_Declaration()
+    {
+        return type.To_DlangType() ~ " " ~ identifier;
+    }
+}
+
+struct Uniform(Declaration declaration)
+{
+    mixin("alias Type = " ~ declaration.type.To_DlangType() ~ ";");
+    int location;
+    int program;
+
+    void Set_Program(int program)
+    {
+        this.program = program;
+        this.location = glGetUniformLocation(program, toStringz(declaration.identifier));
+    }
+
+    void Set(Type value)
+    {
+        static if (declaration.type.glsl_type.selection == SimpleType.TypeSelection.Scalar && !declaration.type.is_array)
+        {
+            enum string Little_String_Type = declaration.type.glsl_type.Get_LittleString_Representation();
+            mixin("alias ProgramUniform = glProgramUniform" ~ Little_String_Type ~ "v;");
+            ProgramUniform(program, location, 1, &value);
+        }
+        else static if (declaration.type.glsl_type.selection == SimpleType.TypeSelection.Vector)
+        {
+            enum string Little_String_Type = declaration.type.glsl_type.Get_LittleString_Representation();
+            mixin("alias ProgramUniform = glProgramUniform" ~ Little_String_Type ~ "v;");
+            ProgramUniform(program, location, declaration.type.no_elements, value.ptr);
+        }
+        else static if (declaration.type.glsl_type.selection == SimpleType.TypeSelection.Matrix)
+        {
+            // TODO: Support Matrix Uniform setting
+            static assert(0, "MATRIX UNIFORM NOT SUPPORTED");
+        }
+    }
+
+    void opAssign(Type value)
+    {
+        this.Set(value);
+    }
+}
+
+struct LayoutInput
+{
+    int location = -1;
+    Declaration declaration;
+    enum Normalized : bool
+    {
+        NORMALIZE = true, DONT_NORMALIZE = false
+    }
+    Normalized normalized;
+
+    string To_String()
+    {
+        assert(location >= 0);
+        return "layout (location = " ~ to!string(location) ~ ") in " ~ declaration.To_String() ~ ";";
+    }
+}
+
+struct ProgramDescriptor
+{
+    ShaderDescriptor vertex_shader;
+    ShaderDescriptor fragment_shader; 
+}
+
+struct ShaderDescriptor
+{
+    string glsl_version;
+    LayoutInput[] layout_inputs;
+    Declaration[] inputs;
+    Declaration[] uniforms;
+    Declaration[] outputs;
+    string source;
+
+    /*
+    string Get_Full_Source()
+    {
+        string full_source; 
+
+        foreach(LayoutInput layout_input; layout_inputs)
+        {
+            full_source ~= layout_input.To_String();
+        }
+
+        foreach(auto input; inputs)
+        {
+            full_source ~=
+        }
+
+        return full_source;
+    }
+    */
+}
+
+import daque.graphics.opengl;
+
+struct Program(ProgramDescriptor Program_Descriptor)
+{
+    int vertex_shader, fragment_shader;
+    int program_id;
+
+    alias Vertex = VertexType!(Program_Descriptor.vertex_shader.layout_inputs);
+
+    static foreach(Declaration Uniform_Declaration; Program_Descriptor.vertex_shader.uniforms)
+    {
+        mixin(q{Uniform!(Uniform_Declaration) } ~ Uniform_Declaration.identifier ~ ";");
+    }
+
+    void init()
+    {
+        program_id = glCreateProgram();
+    }
+}
+
+enum ProgramDescriptor Perspective_Program = 
+{
+    vertex_shader: {
+        glsl_version: "330 core",
+        layout_inputs: [
+            {0, Declaration.From_String("vec3 position"), normalized: LayoutInput.Normalized.DONT_NORMALIZE}, 
+            {1, Declaration.From_String("vec4 color"), normalized: LayoutInput.Normalized.NORMALIZE}
+        ], 
+        uniforms: [
+            Declaration.From_String("float z_near"),
+            Declaration.From_String("float z_far"),
+            Declaration.From_String("float alpha"),
+            Declaration.From_String("float xy_ratio"),
+            Declaration.From_String("vec3 translation")
+        ],
+        outputs: [
+            Declaration.From_String("vec4 v_color")
+        ],
+        source: q{
+            void main()
+            {
+                vec3 rotated = rotation * position;
+                vec3 translated = rotated + translation;
+                gl_Position = perspective;
+            }
+        }
+    },
+    fragment_shader: {
+        glsl_version: "330 core",
+        outputs: [
+            Declaration.From_String("vec4 final_color")
+        ],
+        inputs: [
+            Declaration.From_String("vec4 v_color")
+        ], 
+        source: q{
+            void main()
+            {
+                final_color = v_color;
+            }
+        }
+    }
+};
+
+template VertexType(LayoutInput[] Layout_Inputs)
+{
+    struct VertexType
+    {
+        static foreach(LayoutInput Layout_Input; Layout_Inputs)
+        {
+            mixin(Layout_Input.declaration.To_Dlang_Declaration() ~ ";");
+        }
+
+        static AttributeFormat[] Input_Formats;
+
+        static this()
+        {
+            static foreach(LayoutInput Layout_Input; Layout_Inputs)
+            {
+                mixin(
+                r"
+                {
+                    AttributeFormat format = {
+                        index: Layout_Input.location,
+                        size: Layout_Input.declaration.type.glsl_type.Get_No_Components(), 
+                        type: Layout_Input.declaration.type.glsl_type.Get_Gl_Type(),
+                        normalized: Layout_Input.normalized? GL_TRUE: GL_FALSE,
+                        stride: this.sizeof,
+                        pointer: cast(void*) this." ~ Layout_Input.declaration.identifier ~ r".offsetof
+                    };
+                   Input_Formats ~= format;
+                }
+                ");
+            }
+        }
+    }
+}
+
+void Print_Value(alias T)()
+{
+    import std.stdio;
+    writeln(__traits(identifier, T), " = ", T);
+}
+
+unittest
+{
+    import daque.graphics.sdl;
+    import derelict.sdl2.sdl;
+    import std.stdio;
+    writeln("TESTING GLSL MODULE");
+
+    Window window = new Window("something", 800, 600);
+    Program!Perspective_Program perspective;
+    perspective.z_near = 0.13f;
+
+    perspective.Vertex v;
+    v.position[] = [2, 3, 4];
+    v.color[] = [123, 21, 31, 3];
+
+    while(window.isOpen())
+    {
+        SDL_Event event;
+        while(SDL_PollEvent(&event))
+        {
+            switch(event.type)
+            {
+                case SDL_QUIT:
+                    window.close();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
