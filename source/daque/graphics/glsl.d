@@ -43,7 +43,7 @@ Structs defined in this:
 
 struct ScalarType
 {
-    private enum Enum
+    enum Type
     {
         Bool,
         Int,
@@ -51,21 +51,21 @@ struct ScalarType
         Float,
         Double
     }
-    Enum type;
+    Type type;
 
-    string To_DlangType()
+    string To_Dlang_String()
     {
         final switch(type)
         {
-            case Enum.Bool:
+            case Type.Bool:
                 return "bool";
-            case Enum.Int: 
+            case Type.Int: 
                 return "int";
-            case Enum.Uint: 
+            case Type.Uint: 
                 return "uint";
-            case Enum.Float:
+            case Type.Float:
                 return "float";
-            case Enum.Double: 
+            case Type.Double: 
                 return "double";
         }
     }
@@ -74,15 +74,15 @@ struct ScalarType
     {
         final switch(type)
         {
-            case Enum.Bool:
+            case Type.Bool:
                 assert(0, "UNSUPPORTED");
-            case Enum.Int: 
+            case Type.Int: 
                 return GL_INT;
-            case Enum.Uint: 
+            case Type.Uint: 
                 return GL_UNSIGNED_INT;
-            case Enum.Float:
+            case Type.Float:
                 return GL_FLOAT;
-            case Enum.Double: 
+            case Type.Double: 
                 return GL_DOUBLE;
         }  
     }
@@ -93,23 +93,23 @@ struct ScalarType
         switch(str)
         {
             case "bool":
-                scalar_type.type = Enum.Bool;
+                scalar_type.type = Type.Bool;
                 success = true;
                 break;
             case "int":
-                scalar_type.type = Enum.Int;
+                scalar_type.type = Type.Int;
                 success = true;
                 break;
             case "uint":
-                scalar_type.type = Enum.Uint;
+                scalar_type.type = Type.Uint;
                 success = true;
                 break;
             case "float":
-                scalar_type.type = Enum.Float;
+                scalar_type.type = Type.Float;
                 success = true;
                 break;
             case "double":
-                scalar_type.type = Enum.Double;
+                scalar_type.type = Type.Double;
                 success = true;
                 break;
             default: 
@@ -124,23 +124,23 @@ struct ScalarType
         switch(c)
         {
             case 'b':
-                scalar_type.type = Enum.Bool;
+                scalar_type.type = Type.Bool;
                 success = true;
                 break;
             case 'i':
-                scalar_type.type = Enum.Int;
+                scalar_type.type = Type.Int;
                 success = true;
                 break;
             case 'u':
-                scalar_type.type = Enum.Uint;
+                scalar_type.type = Type.Uint;
                 success = true;
                 break;
             case 'f':
-                scalar_type.type = Enum.Float;
+                scalar_type.type = Type.Float;
                 success = true;
                 break;
             case 'd': 
-                scalar_type.type = Enum.Double;
+                scalar_type.type = Type.Double;
                 success = true;
                 break;
             default:
@@ -153,15 +153,15 @@ struct ScalarType
     {
         final switch(type)
         {
-            case Enum.Bool:
+            case Type.Bool:
                 return 'b';
-            case Enum.Int:
+            case Type.Int:
                 return 'i';
-            case Enum.Uint:
+            case Type.Uint:
                 return 'u';
-            case Enum.Float:
+            case Type.Float:
                 return 'f';
-            case Enum.Double:
+            case Type.Double:
                 return 'd';
         }
     }
@@ -180,32 +180,32 @@ struct ScalarType
     {
         final switch(type)
         {
-            case Enum.Bool:
+            case Type.Bool:
                 return "1b";
-            case Enum.Int:
+            case Type.Int:
                 return "1i";
-            case Enum.Uint: 
+            case Type.Uint: 
                 return "1ui";
-            case Enum.Float: 
+            case Type.Float: 
                 return "1f";
-            case Enum.Double: 
+            case Type.Double: 
                 return "1d";
         }
     }
 
-    string To_String()
+    string To_Glsl_String()
     {
         final switch(type)
         {
-            case Enum.Bool:
+            case Type.Bool:
                 return "bool";
-            case Enum.Int: 
+            case Type.Int: 
                 return "int";
-            case Enum.Uint: 
+            case Type.Uint: 
                 return "uint";
-            case Enum.Float: 
+            case Type.Float: 
                 return "float"; 
-            case Enum.Double: 
+            case Type.Double: 
                 return "double";
         }
     }
@@ -216,14 +216,14 @@ struct VectorType
     ScalarType scalar_type;
     uint components = 2;
 
-    string To_DlangType()
+    string To_Dlang_String()
     {
-        return scalar_type.To_DlangType() ~ "[" ~ to!string(components) ~ "]";
+        return scalar_type.To_Dlang_String() ~ "[" ~ to!string(components) ~ "]";
     }
 
-    string To_String()
+    string To_Glsl_String()
     {
-        if(scalar_type.type == ScalarType.Enum.Float)
+        if(scalar_type.type == ScalarType.Type.Float)
         {
             return "vec" ~ to!string(components);
         }
@@ -263,12 +263,12 @@ struct MatrixType
 {
     uint columns, rows;
 
-    string To_DlangType()
+    string To_Dlang_String()
     {
         return "Matrix!(float, " ~ to!string(rows) ~ ", " ~ to!string(columns) ~ ")";
     }
 
-    string To_String()
+    string To_Glsl_String()
     {
         return "mat" ~ to!string(rows) ~ "x" ~ to!string(columns);
     }
@@ -331,16 +331,16 @@ struct GlslBasicType
     }
     Type type;
 
-    string To_String()
+    string To_Glsl_String()
     {
         final switch(selection)
         {
             case TypeSelection.Scalar: 
-                return type.scalar_type.To_String();
+                return type.scalar_type.To_Glsl_String();
             case TypeSelection.Vector:
-                return type.vector_type.To_String();
+                return type.vector_type.To_Glsl_String();
             case TypeSelection.Matrix:
-                return type.matrix_type.To_String();
+                return type.matrix_type.To_Glsl_String();
         }
     }
 
@@ -383,16 +383,16 @@ struct GlslBasicType
         }
     }
 
-    string To_DlangType()
+    string To_Dlang_String()
     {
         final switch(selection)
         {
             case TypeSelection.Scalar:
-                return type.scalar_type.To_DlangType();
+                return type.scalar_type.To_Dlang_String();
             case TypeSelection.Vector: 
-                return type.vector_type.To_DlangType();
+                return type.vector_type.To_Dlang_String();
             case TypeSelection.Matrix:
-                return type.matrix_type.To_DlangType();
+                return type.matrix_type.To_Dlang_String();
         }
     }
 
@@ -447,15 +447,15 @@ struct GlslArrayOrGlslBasicType
     uint no_elements;
     bool is_array;
 
-    string To_DlangType()
+    string To_Dlang_String()
     {
         if (is_array)
         {
-            return glsl_basic_type.To_DlangType() ~ "[" ~ to!string(no_elements) ~ "]";
+            return glsl_basic_type.To_Dlang_String() ~ "[" ~ to!string(no_elements) ~ "]";
         }
         else
         {
-            return glsl_basic_type.To_DlangType();
+            return glsl_basic_type.To_Dlang_String();
         }
     }
 
@@ -513,23 +513,23 @@ struct Declaration
         return declaration;
     }
 
-    string To_String()
+    string To_Glsl_String()
     {
         if(type.is_array)
-            return type.glsl_basic_type.To_String() ~ " " ~ identifier ~ "[" ~ to!string(type.no_elements) ~ "]";
+            return type.glsl_basic_type.To_Glsl_String() ~ " " ~ identifier ~ "[" ~ to!string(type.no_elements) ~ "]";
         else
-            return type.glsl_basic_type.To_String() ~ " " ~ identifier;
+            return type.glsl_basic_type.To_Glsl_String() ~ " " ~ identifier;
     }
 
-    string To_Dlang_Declaration()
+    string To_Dlang_String()
     {
-        return type.To_DlangType() ~ " " ~ identifier;
+        return type.To_Dlang_String() ~ " " ~ identifier;
     }
 }
 
 struct Uniform(Declaration declaration)
 {
-    mixin("alias Type = " ~ declaration.type.To_DlangType() ~ ";");
+    mixin("alias Type = " ~ declaration.type.To_Dlang_String() ~ ";");
     int location;
     int program;
 
@@ -576,10 +576,10 @@ struct LayoutInput
     }
     Normalized normalized;
 
-    string To_String()
+    string To_Glsl_String()
     {
         assert(location >= 0);
-        return "layout (location = " ~ to!string(location) ~ ") in " ~ declaration.To_String();
+        return "layout (location = " ~ to!string(location) ~ ") in " ~ declaration.To_Glsl_String();
     }
 }
 
@@ -607,25 +607,25 @@ struct ShaderDescriptor
 
         foreach(LayoutInput layout_input; layout_inputs)
         {
-            full_source ~= layout_input.To_String() ~ ";";
+            full_source ~= layout_input.To_Glsl_String() ~ ";";
             full_source ~= '\n';
         }
 
         foreach(Declaration input; inputs)
         {
-            full_source ~= "in " ~ input.To_String() ~ ";";
+            full_source ~= "in " ~ input.To_Glsl_String() ~ ";";
             full_source ~= '\n';
         }
 
         foreach(Declaration uniform; uniforms)
         {
-            full_source ~= "uniform " ~ uniform.To_String() ~ ";";
+            full_source ~= "uniform " ~ uniform.To_Glsl_String() ~ ";";
             full_source ~= '\n';
         }
 
         foreach(Declaration output; outputs)
         {
-            full_source ~= "out " ~ output.To_String() ~ ";";
+            full_source ~= "out " ~ output.To_Glsl_String() ~ ";";
             full_source ~= '\n';
         }
 
@@ -717,7 +717,7 @@ template VertexType(LayoutInput[] Layout_Inputs)
     {
         static foreach(LayoutInput Layout_Input; Layout_Inputs)
         {
-            mixin(Layout_Input.declaration.To_Dlang_Declaration() ~ ";");
+            mixin(Layout_Input.declaration.To_Dlang_String() ~ ";");
         }
 
         static AttributeFormat[] Input_Formats;
@@ -757,13 +757,11 @@ unittest
     import derelict.sdl2.sdl;
     import std.stdio;
 
-    writeln("GLSL MODULE");
-
     Window window = new Window("something", 800, 600);
-
     Program!Testing_Program testing_program;
     testing_program.init();
     testing_program.z_near = 0.13f;
+    window.close();
 
     testing_program.Vertex v;
     v.position[] = [2, 3, 4];
