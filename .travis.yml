@@ -6,7 +6,7 @@ d:
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libsdl2-2.0
-  - sudo apt-get install libsdl2-image-dev
+  - sudo apt-get install -y libsdl2-image-dev
 
 script:
-   - dub test
+   - dub test -b unittest-cov --compiler=${DC}
