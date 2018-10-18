@@ -757,11 +757,15 @@ unittest
     import derelict.sdl2.sdl;
     import std.stdio;
 
+    writeln("before creating window");
     Window window = new Window("something", 800, 600);
+    writeln("after creating window");
     Program!TESTING_PROGRAM_DESCRIPTOR testing_program;
     testing_program.init;
     testing_program.z_near = 0.13f;
+    writeln("after setting uniforms");
     window.close;
+    writeln("after closing window");
 
     testing_program.Vertex v;
     v.position[] = [2, 3, 4];
