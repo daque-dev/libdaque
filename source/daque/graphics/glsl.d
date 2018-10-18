@@ -753,6 +753,7 @@ void Print_Value(alias T)()
 
 unittest
 {
+    /*
     import daque.graphics.sdl;
     import derelict.sdl2.sdl;
     import std.stdio;
@@ -770,5 +771,6 @@ unittest
     testing_program.Vertex v;
     v.position[] = [2, 3, 4];
     v.color[] = [123, 21, 31, 3];
+    */
 }
 
