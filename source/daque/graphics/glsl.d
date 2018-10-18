@@ -667,7 +667,7 @@ struct Program(ProgramDescriptor PROGRAM_DESCRIPTOR)
 
 }
 
-enum ProgramDescriptor Testing_Program = 
+enum ProgramDescriptor TESTING_PROGRAM_DESCRIPTOR = 
 {
     vertex_shader: {
         glsl_version: "#version 330 core",
@@ -711,33 +711,33 @@ enum ProgramDescriptor Testing_Program =
     }
 };
 
-template VertexType(LayoutInput[] Layout_Inputs)
+template VertexType(LayoutInput[] LAYOUT_INPUTS)
 {
     struct VertexType
     {
-        static foreach(LayoutInput Layout_Input; Layout_Inputs)
+        static foreach(LayoutInput LAYOUT_INPUT; LAYOUT_INPUTS)
         {
-            mixin(Layout_Input.declaration.To_Dlang_String() ~ ";");
+            mixin(LAYOUT_INPUT.declaration.To_Dlang_String() ~ ";");
         }
 
-        static AttributeFormat[] Input_Formats;
+        static AttributeFormat[] INPUT_FORMATS;
 
         static this()
         {
-            static foreach(LayoutInput Layout_Input; Layout_Inputs)
+            static foreach(LayoutInput LAYOUT_INPUT; LAYOUT_INPUTS)
             {
                 mixin(
                 r"
                 {
                     AttributeFormat format = {
-                        index: Layout_Input.location,
-                        size: Layout_Input.declaration.type.glsl_basic_type.Get_No_Components(), 
-                        type: Layout_Input.declaration.type.glsl_basic_type.Get_Gl_Type(),
-                        normalized: Layout_Input.normalized? GL_TRUE: GL_FALSE,
+                        index: LAYOUT_INPUT.location,
+                        size: LAYOUT_INPUT.declaration.type.glsl_basic_type.Get_No_Components(), 
+                        type: LAYOUT_INPUT.declaration.type.glsl_basic_type.Get_Gl_Type(),
+                        normalized: LAYOUT_INPUT.normalized? GL_TRUE: GL_FALSE,
                         stride: this.sizeof,
-                        pointer: cast(void*) this." ~ Layout_Input.declaration.identifier ~ r".offsetof
+                        pointer: cast(void*) this." ~ LAYOUT_INPUT.declaration.identifier ~ r".offsetof
                     };
-                   Input_Formats ~= format;
+                   INPUT_FORMATS ~= format;
                 }
                 ");
             }
@@ -758,10 +758,10 @@ unittest
     import std.stdio;
 
     Window window = new Window("something", 800, 600);
-    Program!Testing_Program testing_program;
-    testing_program.init();
+    Program!TESTING_PROGRAM_DESCRIPTOR testing_program;
+    testing_program.init;
     testing_program.z_near = 0.13f;
-    window.close();
+    window.close;
 
     testing_program.Vertex v;
     v.position[] = [2, 3, 4];
