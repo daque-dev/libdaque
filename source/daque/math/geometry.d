@@ -119,6 +119,7 @@ real magnitude(R)(R[] v) if (isNumeric!R)
 ///
 unittest
 {
+    /*
     import daque.utils.test;
 
     Tester test = new Tester("Magnitude");
@@ -126,6 +127,7 @@ unittest
     test.approx!(magnitude!double)([0.0], 0.0);
     test.approx!(magnitude!double)([1.0, 1.0], sqrt(2.0));
     test.approx!(magnitude!double)([1.0, 3.0], 0.0);
+    */
 }
 
 R[] normalize(R)(R[] v) if (isNumeric!R)
